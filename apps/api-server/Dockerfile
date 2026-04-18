@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
-RUN npm ci --only=production && \
+RUN npm install --only=production && \
     npx prisma generate
 
 # ── Stage 2: Builder ───────────────────────────────────
@@ -18,7 +18,7 @@ FROM node:21-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 RUN npx tsc --skipLibCheck
