@@ -242,7 +242,7 @@ async function start() {
     `);
 
   } catch (err) {
-    server.log.error({ err }, 'Failed to start server:');
+    console.error("STARTUP ERROR:", err););
     process.exit(1);
   }
 }
