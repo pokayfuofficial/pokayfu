@@ -212,7 +212,7 @@ async function start() {
     await registerRoutes();
 
     // Подключаем Redis
-    await redis.connect();
+    
 
     // Запускаем BullMQ воркер деплоя токенов
     startDeployTokenWorker();
