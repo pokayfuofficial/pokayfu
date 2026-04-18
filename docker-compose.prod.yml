@@ -1,0 +1,175 @@
+version: '3.9'
+
+# ─────────────────────────────────────────────────────────
+#  POKAYFU — Production Docker Compose
+#  Запуск: docker compose -f docker-compose.prod.yml up -d
+# ─────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ─────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: pokayfu_postgres
+    restart: always
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks: [pokayfu]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+  # ── Redis ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: pokayfu_redis
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks: [pokayfu]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout:  3s
+      retries:  5
+
+  # ── API Server ─────────────────────────────────────
+  api-server:
+    image: pokayfu/api-server:latest
+    container_name: pokayfu_api
+    restart: always
+    env_file: .env
+    environment:
+      NODE_ENV:     production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL:    redis://:${REDIS_PASSWORD}@redis:6379
+    ports:
+      - "3001:3001"
+    networks: [pokayfu]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout:  10s
+      retries:  3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus:   '1.0'
+          memory: 512M
+
+  # ── Mini App (Static) ──────────────────────────────
+  mini-app:
+    image: pokayfu/mini-app:latest
+    container_name: pokayfu_mini_app
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/ssl/pokayfu:ro
+    networks: [pokayfu]
+    depends_on:
+      - api-server
+
+  # ── Nginx Reverse Proxy ────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: pokayfu_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/pokayfu.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/ssl/pokayfu:ro
+      - certbot_www:/var/www/certbot:ro
+    networks: [pokayfu]
+    depends_on:
+      - api-server
+      - mini-app
+
+  # ── Certbot (SSL) ──────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./ssl:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    command: certonly --webroot -w /var/www/certbot -d pokayfu.com -d api.pokayfu.com --email ${ADMIN_EMAIL} --agree-tos --non-interactive
+
+  # ── MinIO (Аудио файлы) ────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: pokayfu_minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER:     ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+    volumes:
+      - minio_data:/data
+    networks: [pokayfu]
+    command: server /data --console-address ":9001"
+
+  # ── Prometheus (Мониторинг) ────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pokayfu_prometheus
+    restart: always
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks: [pokayfu]
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+
+  # ── Grafana (Дашборды) ─────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pokayfu_grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP:     'false'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks: [pokayfu]
+    depends_on:
+      - prometheus
+
+networks:
+  pokayfu:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+  certbot_www:

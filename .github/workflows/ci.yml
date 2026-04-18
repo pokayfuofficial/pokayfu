@@ -1,0 +1,199 @@
+name: Pokayfu CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '21'
+
+jobs:
+
+  # ── LINT & TYPE CHECK ──────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check (api-server)
+        run: cd apps/api-server && npx tsc --noEmit --skipLibCheck
+
+      - name: TypeScript check (mini-app)
+        run: cd apps/mini-app && npx tsc --noEmit
+
+  # ── CONTRACT TESTS ────────────────────────────────
+  test-contracts:
+    name: Smart Contract Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install contract deps
+        run: cd contracts && npm ci
+
+      - name: Run contract tests
+        run: cd contracts && npx jest --coverage --ci
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./contracts/coverage
+          flags: contracts
+
+  # ── API TESTS ─────────────────────────────────────
+  test-api:
+    name: API Server Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER:     pokayfu_test
+          POSTGRES_PASSWORD: pokayfu_test
+          POSTGRES_DB:       pokayfu_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: cd apps/api-server && npm ci
+
+      - name: Generate Prisma client
+        run: cd apps/api-server && npx prisma generate
+        env:
+          DATABASE_URL: postgresql://pokayfu_test:pokayfu_test@localhost:5432/pokayfu_test
+
+      - name: Run database migrations
+        run: cd apps/api-server && npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://pokayfu_test:pokayfu_test@localhost:5432/pokayfu_test
+
+      - name: Run API tests
+        run: cd apps/api-server && npm test
+        env:
+          NODE_ENV:     test
+          DATABASE_URL: postgresql://pokayfu_test:pokayfu_test@localhost:5432/pokayfu_test
+          REDIS_URL:    redis://localhost:6379
+          JWT_SECRET:   test_jwt_secret_for_ci_only
+
+  # ── BUILD ─────────────────────────────────────────
+  build:
+    name: Build All
+    needs: [lint, test-contracts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build API Server
+        run: cd apps/api-server && npx tsc
+        env:
+          NODE_ENV: production
+
+      - name: Build Mini App
+        run: cd apps/mini-app && npm run build
+        env:
+          NODE_ENV:       production
+          VITE_API_URL:   https://api.pokayfu.com/v1
+
+      - name: Upload API build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-server-dist
+          path: apps/api-server/dist/
+          retention-days: 7
+
+      - name: Upload Mini App build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mini-app-dist
+          path: apps/mini-app/dist/
+          retention-days: 7
+
+  # ── DOCKER BUILD ──────────────────────────────────
+  docker:
+    name: Build Docker Images
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push API Server
+        uses: docker/build-push-action@v5
+        with:
+          context:   apps/api-server
+          file:      apps/api-server/Dockerfile
+          push:      true
+          tags: |
+            pokayfu/api-server:latest
+            pokayfu/api-server:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      - name: Build & Push Mini App
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/mini-app
+          file:    apps/mini-app/Dockerfile
+          push:    true
+          tags: |
+            pokayfu/mini-app:latest
+            pokayfu/mini-app:${{ github.sha }}

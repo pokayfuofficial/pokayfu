@@ -1,0 +1,424 @@
+// ─────────────────────────────────────────────
+//  POKAYFU — Prisma Schema
+//  PostgreSQL 16
+// ─────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── ENUMS ──────────────────────────────────────
+
+enum UserRole {
+  LISTENER
+  ARTIST
+  ADMIN
+}
+
+enum TrackStatus {
+  PENDING
+  DEPLOYING
+  ACTIVE
+  FAILED
+  REMOVED
+}
+
+enum Genre {
+  HIP_HOP
+  ELECTRONIC
+  POP
+  RNB
+  ROCK
+  INDIE
+  TRAP
+  HOUSE
+  OTHER
+}
+
+enum TokenType {
+  TRACK
+  ARTIST
+}
+
+enum TransactionType {
+  BUY
+  SELL
+}
+
+enum ChartType {
+  HOT
+  RISING
+  HOLDERS
+  NEW
+  VOLUME
+  GENRE
+  FOR_YOU
+  REGION
+}
+
+enum Region {
+  RU
+  CIS
+  WORLD
+}
+
+enum RoyaltyStatus {
+  PENDING
+  CLAIMED
+}
+
+// ── USERS ──────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  telegramId    String   @unique @map("telegram_id")
+  username      String?
+  name          String
+  avatarUrl     String?  @map("avatar_url")
+  role          UserRole @default(LISTENER)
+  referralCode  String   @unique @map("referral_code")
+  referredById  String?  @map("referred_by_id")
+
+  isPremium     Boolean  @default(false) @map("is_premium")
+  premiumUntil  DateTime? @map("premium_until")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  artist         Artist?
+  plays          Play[]
+  transactions   Transaction[]
+  trackHoldings  TokenHolder[]     @relation("TrackHoldings")
+  artistHoldings TokenHolder[]     @relation("ArtistHoldings")
+  royaltyPayouts RoyaltyPayout[]
+  follows        Follow[]          @relation("Follower")
+  followers      Follow[]          @relation("Following")
+  likes          Like[]
+  comments       Comment[]
+  referredBy     User?             @relation("Referrals", fields: [referredById], references: [id])
+  referrals      User[]            @relation("Referrals")
+
+  @@map("users")
+}
+
+// ── ARTISTS ────────────────────────────────────
+
+model Artist {
+  id              String  @id @default(cuid())
+  userId          String  @unique @map("user_id")
+  bio             String?
+  genres          Genre[]
+  country         String?
+  socialTelegram  String? @map("social_telegram")
+  socialVk        String? @map("social_vk")
+  socialInstagram String? @map("social_instagram")
+  isVerified      Boolean @default(false) @map("is_verified")
+
+  registrationTxHash String? @map("registration_tx_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id])
+  tracks      Track[]
+  artistToken ArtistToken?
+  follows     Follow[]
+
+  @@map("artists")
+}
+
+// ── TRACKS ─────────────────────────────────────
+
+model Track {
+  id          String      @id @default(cuid())
+  artistId    String      @map("artist_id")
+  title       String
+  genre       Genre
+  year        Int
+  lyrics      String?
+  audioUrl    String      @map("audio_url")
+  coverUrl    String?     @map("cover_url")
+  durationSec Int         @map("duration_sec")
+  status      TrackStatus @default(PENDING)
+
+  // Кэшированные метрики (обновляются кроном)
+  totalPlays       Int   @default(0) @map("total_plays")
+  uniqueListeners  Int   @default(0) @map("unique_listeners")
+  completionRate   Float @default(0) @map("completion_rate")
+  libraryCount     Int   @default(0) @map("library_count")
+  likeCount        Int   @default(0) @map("like_count")
+  commentCount     Int   @default(0) @map("comment_count")
+  shareCount       Int   @default(0) @map("share_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  artist          Artist          @relation(fields: [artistId], references: [id])
+  trackToken      TrackToken?
+  plays           Play[]
+  likes           Like[]
+  comments        Comment[]
+  chartSnapshots  ChartSnapshot[]
+
+  @@index([artistId])
+  @@index([genre])
+  @@index([status])
+  @@index([createdAt])
+  @@map("tracks")
+}
+
+// ── TRACK TOKEN ────────────────────────────────
+
+model TrackToken {
+  id               String  @id @default(cuid())
+  trackId          String  @unique @map("track_id")
+  contractAddress  String  @unique @map("contract_address")
+  ticker           String
+  totalSupply      String  @default("1000000000") @map("total_supply")
+
+  // Цена и метрики (обновляются с блокчейна/STON.FI каждые 5 мин)
+  currentPriceTon  String  @default("0.000001") @map("current_price_ton")
+  priceChange24h   Float   @default(0) @map("price_change_24h")
+  holderCount      Int     @default(0) @map("holder_count")
+  volume24h        String  @default("0") @map("volume_24h")
+  marketCapTon     String  @default("0") @map("market_cap_ton")
+
+  // Ликвидность
+  lpLocked         Boolean   @default(false) @map("lp_locked")
+  lpLockedAt       DateTime? @map("lp_locked_at")
+  lpTxHash         String?   @map("lp_tx_hash")
+  lpAmount         String?   @map("lp_amount")
+
+  deployTxHash     String?   @map("deploy_tx_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  track         Track           @relation(fields: [trackId], references: [id])
+  holders       TokenHolder[]   @relation("TrackTokenHolders")
+  transactions  Transaction[]   @relation("TrackTransactions")
+  priceHistory  PriceHistory[]
+  royaltyPayouts RoyaltyPayout[]
+
+  @@map("track_tokens")
+}
+
+// ── ARTIST TOKEN ───────────────────────────────
+
+model ArtistToken {
+  id               String  @id @default(cuid())
+  artistId         String  @unique @map("artist_id")
+  contractAddress  String  @unique @map("contract_address")
+  ticker           String
+
+  totalSupply      String  @default("100000000") @map("total_supply")
+  currentPriceTon  String  @default("0.000001") @map("current_price_ton")
+  priceChange24h   Float   @default(0) @map("price_change_24h")
+  holderCount      Int     @default(0) @map("holder_count")
+  volume24h        String  @default("0") @map("volume_24h")
+  marketCapTon     String  @default("0") @map("market_cap_ton")
+
+  lpLocked         Boolean   @default(false) @map("lp_locked")
+  lpLockedAt       DateTime? @map("lp_locked_at")
+  lpTxHash         String?   @map("lp_tx_hash")
+
+  royaltyFlow7d    String  @default("0") @map("royalty_flow_7d")
+  deployTxHash     String? @map("deploy_tx_hash")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  artist       Artist        @relation(fields: [artistId], references: [id])
+  holders      TokenHolder[] @relation("ArtistTokenHolders")
+  transactions Transaction[] @relation("ArtistTransactions")
+
+  @@map("artist_tokens")
+}
+
+// ── TOKEN HOLDERS ──────────────────────────────
+
+model TokenHolder {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  tokenType      TokenType @map("token_type")
+  trackTokenId   String?   @map("track_token_id")
+  artistTokenId  String?   @map("artist_token_id")
+  amount         String    // количество токенов
+  avgBuyPrice    String    @default("0") @map("avg_buy_price")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User         @relation("TrackHoldings", fields: [userId], references: [id])
+  userArtist  User         @relation("ArtistHoldings", fields: [userId], references: [id])
+  trackToken  TrackToken?  @relation("TrackTokenHolders", fields: [trackTokenId], references: [id])
+  artistToken ArtistToken? @relation("ArtistTokenHolders", fields: [artistTokenId], references: [id])
+
+  @@unique([userId, trackTokenId])
+  @@unique([userId, artistTokenId])
+  @@index([trackTokenId])
+  @@index([artistTokenId])
+  @@map("token_holders")
+}
+
+// ── PRICE HISTORY ──────────────────────────────
+
+model PriceHistory {
+  id           String @id @default(cuid())
+  trackTokenId String @map("track_token_id")
+  priceTon     String @map("price_ton")
+  volumeTon    String @default("0") @map("volume_ton")
+  timestamp    DateTime @default(now())
+
+  trackToken TrackToken @relation(fields: [trackTokenId], references: [id])
+
+  @@index([trackTokenId, timestamp])
+  @@map("price_history")
+}
+
+// ── TRANSACTIONS ───────────────────────────────
+
+model Transaction {
+  id             String          @id @default(cuid())
+  userId         String          @map("user_id")
+  type           TransactionType
+  tokenType      TokenType       @map("token_type")
+  trackTokenId   String?         @map("track_token_id")
+  artistTokenId  String?         @map("artist_token_id")
+  amountTon      String          @map("amount_ton")
+  tokensCount    String          @map("tokens_count")
+  priceTon       String          @map("price_ton")
+  txHash         String?         @map("tx_hash")
+  idempotencyKey String          @unique @map("idempotency_key")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id])
+  trackToken  TrackToken?  @relation("TrackTransactions", fields: [trackTokenId], references: [id])
+  artistToken ArtistToken? @relation("ArtistTransactions", fields: [artistTokenId], references: [id])
+
+  @@index([userId])
+  @@index([trackTokenId])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ── PLAYS ──────────────────────────────────────
+
+model Play {
+  id          String  @id @default(cuid())
+  userId      String  @map("user_id")
+  trackId     String  @map("track_id")
+  durationSec Int     @map("duration_sec")
+  completed   Boolean @default(false)
+  country     String?
+  userAgent   String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id])
+  track Track @relation(fields: [trackId], references: [id])
+
+  @@index([trackId, createdAt])
+  @@index([userId, trackId])
+  @@map("plays")
+}
+
+// ── ROYALTY PAYOUTS ────────────────────────────
+
+model RoyaltyPayout {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  trackTokenId  String        @map("track_token_id")
+  amountTon     String        @map("amount_ton")
+  status        RoyaltyStatus @default(PENDING)
+  txHash        String?       @map("tx_hash")
+  claimedAt     DateTime?     @map("claimed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user       User       @relation(fields: [userId], references: [id])
+  trackToken TrackToken @relation(fields: [trackTokenId], references: [id])
+
+  @@index([userId, status])
+  @@map("royalty_payouts")
+}
+
+// ── CHART SNAPSHOTS ────────────────────────────
+
+model ChartSnapshot {
+  id        String    @id @default(cuid())
+  trackId   String    @map("track_id")
+  chartType ChartType @map("chart_type")
+  genre     Genre?
+  region    Region?
+  score     Float
+  rank      Int
+  metadata  Json      @default("{}")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  track Track @relation(fields: [trackId], references: [id])
+
+  @@index([chartType, region, createdAt])
+  @@index([trackId, chartType])
+  @@map("chart_snapshots")
+}
+
+// ── FOLLOWS ────────────────────────────────────
+
+model Follow {
+  id        String @id @default(cuid())
+  followerId String @map("follower_id")
+  artistId   String @map("artist_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  follower User   @relation("Follower", fields: [followerId], references: [id])
+  artist   Artist @relation(fields: [artistId], references: [id])
+  following User  @relation("Following", fields: [followerId], references: [id])
+
+  @@unique([followerId, artistId])
+  @@map("follows")
+}
+
+// ── LIKES ──────────────────────────────────────
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  trackId   String   @map("track_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id])
+  track Track @relation(fields: [trackId], references: [id])
+
+  @@unique([userId, trackId])
+  @@map("likes")
+}
+
+// ── COMMENTS ───────────────────────────────────
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  trackId   String   @map("track_id")
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id])
+  track Track @relation(fields: [trackId], references: [id])
+
+  @@index([trackId, createdAt])
+  @@map("comments")
+}

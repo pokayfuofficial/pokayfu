@@ -1,0 +1,117 @@
+name: Pokayfu CD — Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy target'
+        required: true
+        default: 'production'
+        type: choice
+        options: [production, staging]
+
+jobs:
+
+  # ── DEPLOY API SERVER ─────────────────────────────
+  deploy-api:
+    name: Deploy API Server
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key:      ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "🚀 Deploying Pokayfu API Server..."
+            cd /opt/pokayfu
+
+            # Pull latest images
+            docker pull pokayfu/api-server:latest
+
+            # Run migrations
+            docker run --rm \
+              --env-file /opt/pokayfu/.env \
+              pokayfu/api-server:latest \
+              npx prisma migrate deploy
+
+            # Restart service
+            docker compose up -d api-server
+
+            # Health check
+            sleep 10
+            curl -f http://localhost:3001/health || exit 1
+
+            echo "✅ API Server deployed successfully"
+
+  # ── DEPLOY MINI APP ───────────────────────────────
+  deploy-mini-app:
+    name: Deploy Mini App (CDN)
+    runs-on: ubuntu-latest
+    needs: [deploy-api]
+
+    steps:
+      - name: Download Mini App build
+        uses: actions/download-artifact@v4
+        with:
+          name: mini-app-dist
+          path: ./dist
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken:   ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:  ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: pokayfu-mini-app
+          directory:   ./dist
+
+  # ── DATABASE BACKUP ───────────────────────────────
+  backup-db:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    needs: [deploy-api]
+
+    steps:
+      - name: Create database backup
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key:      ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            BACKUP_FILE="pokayfu_db_$(date +%Y%m%d_%H%M%S).sql.gz"
+            docker exec pokayfu_postgres pg_dump -U pokayfu pokayfu_db | gzip > /opt/backups/$BACKUP_FILE
+            echo "✅ Backup created: $BACKUP_FILE"
+
+  # ── NOTIFY TEAM ───────────────────────────────────
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [deploy-api, deploy-mini-app]
+    if: always()
+
+    steps:
+      - name: Send Telegram notification
+        uses: appleboy/telegram-action@master
+        with:
+          to:      ${{ secrets.TELEGRAM_NOTIFY_CHAT_ID }}
+          token:   ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚀 *Pokayfu Deployment*
+
+            Status: ${{ needs.deploy-api.result == 'success' && needs.deploy-mini-app.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }}
+            Branch: `${{ github.ref_name }}`
+            Commit: `${{ github.sha }}`
+            By: ${{ github.actor }}
+
+            API: ${{ needs.deploy-api.result }}
+            Mini App: ${{ needs.deploy-mini-app.result }}

@@ -1,0 +1,28 @@
+{
+  "projects": [
+    {
+      "name":    "TrackToken",
+      "path":    "track-token/TrackToken.tact",
+      "output":  "build/track-token",
+      "options": { "debug": false, "masterchain": false }
+    },
+    {
+      "name":    "ArtistToken",
+      "path":    "artist-token/ArtistToken.tact",
+      "output":  "build/artist-token",
+      "options": { "debug": false, "masterchain": false }
+    },
+    {
+      "name":    "LiquidityLock",
+      "path":    "liquidity-lock/LiquidityLock.tact",
+      "output":  "build/liquidity-lock",
+      "options": { "debug": false, "masterchain": false }
+    },
+    {
+      "name":    "RoyaltyDistributor",
+      "path":    "royalty-distributor/RoyaltyDistributor.tact",
+      "output":  "build/royalty-distributor",
+      "options": { "debug": false, "masterchain": false }
+    }
+  ]
+}
