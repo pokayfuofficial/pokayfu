@@ -242,7 +242,7 @@ async function start() {
     `);
 
   } catch (err) {
-    console.error("STARTUP ERROR:", err););
+    console.error("STARTUP ERROR:", err);
     process.exit(1);
   }
 }
