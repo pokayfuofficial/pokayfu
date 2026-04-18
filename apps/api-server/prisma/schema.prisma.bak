@@ -261,7 +261,7 @@ model TokenHolder {
 
   // Relations
   user        User         @relation("TrackHoldings", fields: [userId], references: [id], map: "token_holders_user_track_fkey")
-  userArtist  User         @relation("ArtistHoldings", fields: [userId], references: [id], map: "token_holders_user_artist_fkey")
+  userArtist  User         @relation("ArtistHoldings", fields: [userId], references: [id])
   trackToken  TrackToken?  @relation("TrackTokenHolders", fields: [trackTokenId], references: [id])
   artistToken ArtistToken? @relation("ArtistTokenHolders", fields: [artistTokenId], references: [id])
 
@@ -384,9 +384,9 @@ model Follow {
   artistId   String @map("artist_id")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  follower User   @relation("Follower", fields: [followerId], references: [id], map: "follows_follower_id_fkey")
+  follower User   @relation("Follower", fields: [followerId], references: [id])
   artist   Artist @relation(fields: [artistId], references: [id])
-  following User  @relation("Following", fields: [followerId], references: [id], map: "follows_following_id_fkey")
+  following User  @relation("Following", fields: [followerId], references: [id])
 
   @@unique([followerId, artistId])
   @@map("follows")
