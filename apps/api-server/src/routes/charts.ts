@@ -6,7 +6,8 @@ import { getChart } from '../services/charts.service';
 export async function chartRoutes(fastify: FastifyInstance) {
 
   // GET /charts/hot
-  fastify.get('/charts/hot', async (request, reply) => {
+  console.log("CHART HOT ROUTE REGISTERED");
+  fastify.get("/hot", async (request, reply) => {
     const { region = 'RU', period = '24h' } = request.query as any;
     const data = await getChart(ChartType.HOT, region as Region, period as Period);
     return reply.send({ success: true, data });
