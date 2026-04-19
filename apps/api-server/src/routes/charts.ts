@@ -1,3 +1,6 @@
+const ChartType = { HOT: "HOT", RISING: "RISING", HOLDERS: "HOLDERS", NEW: "NEW", VOLUME: "VOLUME", GENRE: "GENRE", FOR_YOU: "FOR_YOU", REGION: "REGION" };
+const Region = { RU: "RU", CIS: "CIS", WORLD: "WORLD" };
+const Period = { DAY: "24h", WEEK: "7d", MONTH: "30d" };
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth';
 import { getChart } from '../services/charts.service';
