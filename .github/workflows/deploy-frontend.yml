@@ -10,8 +10,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm install --legacy-peer-deps
-      - run: cd apps/mini-app && npm run build
+      - name: Install root deps
+        run: npm install --legacy-peer-deps
+      - name: Install mini-app deps
+        run: cd apps/mini-app && npm install --legacy-peer-deps
+      - name: Build
+        run: cd apps/mini-app && npm run build
         env:
           VITE_API_URL: https://pokayfu-production.up.railway.app/v1
           VITE_TON_NETWORK: testnet
