@@ -17,7 +17,7 @@ const RegisterArtistSchema = z.object({
 
 const UpdateArtistSchema = z.object({
   bio:             z.string().max(1000).optional(),
-  genres:          z.array(z.nativeEnum(Genre)).optional(),
+  genres: z.array(z.enum(['HIP_HOP','ELECTRONIC','POP','RNB','ROCK','INDIE','TRAP','HOUSE','OTHER'])).optional(),
   country:         z.string().max(2).optional(),
   socialTelegram:  z.string().optional(),
   socialVk:        z.string().optional(),
