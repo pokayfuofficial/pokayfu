@@ -6,7 +6,7 @@
 import { Worker, Queue } from 'bullmq';
 import { redis } from '../cache/redis';
 import { db } from '../db/client';
-import { DeployTokenJob } from '@pokayfu/shared-types';
+
 import { createLiquidityPool, lockLiquidity } from '../blockchain/stonfi.service';
 
 // ── QUEUE ─────────────────────────────────────────────

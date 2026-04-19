@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth';
 import { getChart } from '../services/charts.service';
-import { ChartType, Region, Period } from '@pokayfu/shared-types';
+
 
 export async function chartRoutes(fastify: FastifyInstance) {
 

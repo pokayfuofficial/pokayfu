@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db/client';
-import { UserRole } from '@pokayfu/shared-types';
+type UserRole = 'LISTENER' | 'ARTIST' | 'ADMIN';
 
 // ── TELEGRAM AUTH VERIFICATION ─────────────────
 

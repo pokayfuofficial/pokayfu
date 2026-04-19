@@ -1,7 +1,7 @@
 import { Worker, Queue, QueueEvents } from 'bullmq';
 import { redis } from '../cache/redis';
 import { db } from '../db/client';
-import { DeployTokenJob } from '@pokayfu/shared-types';
+
 
 // ── QUEUE ─────────────────────────────────────
 

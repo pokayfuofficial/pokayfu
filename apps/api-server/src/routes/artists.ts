@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { requireAuth, requireArtist } from '../middleware/auth';
 import { cacheGetOrSet, cacheDel, CacheKeys } from '../cache/redis';
-import { Genre } from '@pokayfu/shared-types';
+type Genre = 'HIP_HOP' | 'ELECTRONIC' | 'POP' | 'RNB' | 'ROCK' | 'INDIE' | 'TRAP' | 'HOUSE' | 'OTHER';
 
 const RegisterArtistSchema = z.object({
   bio:             z.string().max(1000).optional(),

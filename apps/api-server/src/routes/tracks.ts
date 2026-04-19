@@ -5,7 +5,7 @@ import { requireAuth, requireArtist } from '../middleware/auth';
 import { deployTokenQueue, generateTicker } from '../workers/deployToken.worker';
 import { cacheGetOrSet, cacheDel, CacheKeys } from '../cache/redis';
 import { checkTrackAccess } from '../utils/bonding-curve';
-import { Genre } from '@pokayfu/shared-types';
+type Genre = 'HIP_HOP' | 'ELECTRONIC' | 'POP' | 'RNB' | 'ROCK' | 'INDIE' | 'TRAP' | 'HOUSE' | 'OTHER';
 
 const CreateTrackSchema = z.object({
   title:   z.string().min(1).max(200),

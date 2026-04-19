@@ -1,6 +1,6 @@
 import { db } from '../db/client';
 import { cacheGetOrSet, cacheSet, CacheKeys } from '../cache/redis';
-import { ChartType, Region, Period } from '@pokayfu/shared-types';
+
 
 // ── HOT SCORE ALGORITHM ────────────────────────
 //
