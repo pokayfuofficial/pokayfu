@@ -232,6 +232,7 @@ async function start() {
     const HOST = process.env.HOST || '0.0.0.0';
 
     await server.listen({ port: PORT, host: HOST });
+    console.log("SERVER STARTED ON PORT", PORT);
 
     server.log.info(`
 ╔═══════════════════════════════════════╗
