@@ -210,6 +210,7 @@ async function start() {
     // Регистрируем плагины и роуты
     await registerPlugins();
     await registerRoutes();
+    console.log("ROUTES REGISTERED");
 
     // Подключаем Redis
     
