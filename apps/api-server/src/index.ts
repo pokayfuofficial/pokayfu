@@ -69,6 +69,7 @@ async function registerRoutes() {
   await server.register(artistRoutes, { prefix: `${prefix}/artists` });
   await server.register(trackRoutes,  { prefix: `${prefix}/tracks` });
   await server.register(tokenRoutes,  { prefix: `${prefix}/tokens` });
+  console.log("REGISTERING CHARTS");
   await server.register(chartRoutes,  { prefix: `${prefix}/charts` });
 
   // 404 handler
