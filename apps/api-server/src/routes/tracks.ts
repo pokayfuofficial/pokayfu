@@ -9,7 +9,7 @@ type Genre = 'HIP_HOP' | 'ELECTRONIC' | 'POP' | 'RNB' | 'ROCK' | 'INDIE' | 'TRAP
 
 const CreateTrackSchema = z.object({
   title:   z.string().min(1).max(200),
-  genre:   z.nativeEnum(Genre),
+  genre:   z.enum(['HIP_HOP','ELECTRONIC','POP','RNB','ROCK','INDIE','TRAP','HOUSE','OTHER']),
   year:    z.number().int().min(1900).max(2030),
   lyrics:  z.string().optional(),
   audioUrl:   z.string().url(),
