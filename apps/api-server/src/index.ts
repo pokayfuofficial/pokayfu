@@ -250,7 +250,9 @@ async function start() {
 
 // ── GRACEFUL SHUTDOWN ──────────────────────────
 
-process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on("uncaughtException", (err) => console.error("UNCAUGHT:", err));
+process.on("unhandledRejection", (err) => console.error("UNHANDLED:", err));
+process.on("SIGINT",  () => shutdown("SIGINT"));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 async function shutdown(signal: string) {
