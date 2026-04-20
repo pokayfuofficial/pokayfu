@@ -27,7 +27,7 @@ const UpdateArtistSchema = z.object({
 export async function artistRoutes(fastify: FastifyInstance) {
 
   // GET /artists/top — топ артистов по объёму
-  fastify.get('/artists/top', async (request, reply) => {
+  fastify.get('/top', async (request, reply) => {
     const { limit = '20' } = request.query as any;
 
     const artists = await db.artist.findMany({
@@ -44,7 +44,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // GET /artists/search
-  fastify.get('/artists/search', async (request, reply) => {
+  fastify.get('/search', async (request, reply) => {
     const { q } = request.query as { q?: string };
     if (!q || q.trim().length < 2) {
       return reply.status(400).send({ success: false, error: 'Минимум 2 символа', code: 'VALIDATION_ERROR', status: 400 });
@@ -66,7 +66,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // POST /artists/register — регистрация артиста
-  fastify.post('/artists/register', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/register', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const body = RegisterArtistSchema.safeParse(request.body);
 
@@ -120,7 +120,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // GET /artists/:id — профиль артиста
-  fastify.get('/artists/:id', async (request, reply) => {
+  fastify.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const artist = await cacheGetOrSet(
@@ -144,7 +144,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // PATCH /artists/me — обновление профиля артиста
-  fastify.patch('/artists/me', { preHandler: requireArtist }, async (request, reply) => {
+  fastify.patch('/me', { preHandler: requireArtist }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const body = UpdateArtistSchema.safeParse(request.body);
 
@@ -169,7 +169,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // GET /artists/:id/tracks — треки артиста
-  fastify.get('/artists/:id/tracks', async (request, reply) => {
+  fastify.get('/:id/tracks', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { limit = '20', offset = '0' } = request.query as any;
 
@@ -188,7 +188,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // GET /artists/:id/stats — статистика артиста
-  fastify.get('/artists/:id/stats', async (request, reply) => {
+  fastify.get('/:id/stats', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const [artist, tracks] = await Promise.all([
@@ -226,7 +226,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // POST /artists/:id/follow — подписка / отписка (toggle)
-  fastify.post('/artists/:id/follow', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/:id/follow', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
 
@@ -246,7 +246,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
   });
 
   // POST /artists/:id/tip — отправить tip
-  fastify.post('/artists/:id/tip', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/:id/tip', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { amountTon, txHash } = request.body as { amountTon: string; txHash: string };
 

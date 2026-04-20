@@ -145,7 +145,7 @@ export async function requireArtist(
   await requireAuth(request, reply);
 
   const payload = request.user as { userId: string; role: string };
-  if (payload.role !== UserRole.ARTIST && payload.role !== UserRole.ADMIN) {
+  if (payload.role !== 'ARTIST' && payload.role !== 'ADMIN') {
     return reply.status(403).send({
       success: false,
       error:   'Только для артистов',
