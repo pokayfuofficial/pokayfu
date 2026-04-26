@@ -19,7 +19,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // POST /auth/telegram
   // Авторизация через Telegram initData
-  fastify.post('/auth/telegram', async (request, reply) => {
+  fastify.post('/telegram', async (request, reply) => {
     const body = TelegramAuthSchema.safeParse(request.body);
     if (!body.success) {
       return reply.status(400).send({
@@ -108,7 +108,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   });
 
   // POST /auth/refresh
-  fastify.post('/auth/refresh', async (request, reply) => {
+  fastify.post('/refresh', async (request, reply) => {
     const body = RefreshSchema.safeParse(request.body);
     if (!body.success) {
       return reply.status(400).send({ success: false, error: 'Неверный токен', code: 'VALIDATION_ERROR', status: 400 });
@@ -134,7 +134,7 @@ export async function authRoutes(fastify: FastifyInstance) {
   });
 
   // GET /auth/me
-  fastify.get('/auth/me', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.get('/me', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const { db } = await import('../db/client');
 
