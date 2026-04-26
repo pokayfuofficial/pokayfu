@@ -176,7 +176,7 @@ export function UploadScreen() {
       <div className="mx-4 mb-4 p-3.5 bg-surface border border-white/[0.06] rounded-[14px] flex items-start gap-2.5">
         <span className="text-[18px] flex-shrink-0 mt-0.5">💎</span>
         <div className="text-[10px] text-white/35 leading-relaxed">
-          Деплой токена требует <span className="text-white/60 font-semibold">~2 TON</span> на газ сети TON. Спишется через TON Connect.
+          Деплой токена требует <span className="text-white/60 font-semibold">~0.02 TON</span> на газ сети TON. Спишется через TON Connect.
         </div>
       </div>
 

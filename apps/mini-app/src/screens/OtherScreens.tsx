@@ -452,7 +452,7 @@ export function ProfileScreen() {
             style={{ background: 'rgba(124,58,255,0.15)', border: '1px solid rgba(124,58,255,0.25)' }}
             onClick={() => navigate('upload')}
           >
-            🎙️ Стать артистом → 50 TON
+            🎙️ Стать артистом → 0.5 TON
           </button>
         )}
       </div>
@@ -528,7 +528,7 @@ export function ProfileScreen() {
           { icon: '💼', iconBg: 'rgba(124,58,255,0.12)', title: 'Мой портфель', sub: 'Токены и история сделок', badge: '+29.2%', badgeColor: '#34D399', badgeBg: 'rgba(52,211,153,0.12)', onClick: () => useUIStore.getState().setTab('library') },
           { icon: '⚡', iconBg: 'rgba(0,229,176,0.1)',   title: 'Royalty Flow',  sub: 'Пассивный доход от артистов', badge: `+${royalty?.pendingTon || '0'} TON`, badgeColor: '#34D399', badgeBg: 'rgba(52,211,153,0.12)', onClick: () => showToast('⚡ Royalty Flow') },
           { icon: '🔔', iconBg: 'rgba(255,58,140,0.1)',  title: 'Уведомления',   sub: 'Новые треки и изменения цен', badge: '3 новых', badgeColor: '#7C3AFF', badgeBg: 'rgba(124,58,255,0.15)', onClick: () => showToast('🔔 Нет новых уведомлений') },
-          { icon: '🎵', iconBg: 'rgba(124,58,255,0.12)', title: 'Загрузить трек',sub: 'Стать артистом · 50 TON', badge: undefined, onClick: () => navigate('upload') },
+          { icon: '🎵', iconBg: 'rgba(124,58,255,0.12)', title: 'Загрузить трек',sub: 'Стать артистом · 0.5 TON', badge: undefined, onClick: () => navigate('upload') },
           { icon: '❓', iconBg: 'rgba(255,255,255,0.05)', title: 'Поддержка',     sub: 'Помощь и вопросы', badge: undefined, onClick: () => showToast('❓ Поддержка скоро!') },
         ].map((item, i) => (
           <div key={i}

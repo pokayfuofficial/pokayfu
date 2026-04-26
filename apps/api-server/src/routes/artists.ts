@@ -12,7 +12,7 @@ const RegisterArtistSchema = z.object({
   socialTelegram:  z.string().optional(),
   socialVk:        z.string().optional(),
   socialInstagram: z.string().optional(),
-  txHash:          z.string(), // подтверждение оплаты 50 TON
+  txHash:          z.string(), // подтверждение оплаты 0.5 TON
 });
 
 const UpdateArtistSchema = z.object({
@@ -90,7 +90,7 @@ export async function artistRoutes(fastify: FastifyInstance) {
       });
     }
 
-    // TODO: Верифицировать txHash в TON — что действительно пришло 50 TON
+    // TODO: Верифицировать txHash в TON — что действительно пришло 0.5 TON
     // const verified = await verifyTonTransaction(body.data.txHash, PLATFORM_WALLET, 50);
     // if (!verified) return reply.status(402).send(...)
 
