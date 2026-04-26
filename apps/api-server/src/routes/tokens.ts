@@ -13,7 +13,7 @@ const BuyEstimateSchema = z.object({
 export async function tokenRoutes(fastify: FastifyInstance) {
 
   // GET /tokens/track/:id — данные токена трека
-  fastify.get('/tokens/track/:id', async (request, reply) => {
+  fastify.get('/track/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const token = await db.trackToken.findFirst({
@@ -35,7 +35,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tokens/artist/:id — данные Artist Token
-  fastify.get('/tokens/artist/:id', async (request, reply) => {
+  fastify.get('/artist/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const token = await db.artistToken.findFirst({
@@ -57,7 +57,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tokens/track/:id/buy — инициировать покупку
-  fastify.post('/tokens/track/:id/buy', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/track/:id/buy', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
     const body = BuyEstimateSchema.safeParse(request.body);
@@ -116,7 +116,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tokens/track/:id/buy/confirm — подтверждение после TON Connect
-  fastify.post('/tokens/track/:id/buy/confirm', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/track/:id/buy/confirm', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const { transactionId, txHash } = request.body as { transactionId: string; txHash: string };
 
@@ -170,7 +170,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tokens/track/:id/sell
-  fastify.post('/tokens/track/:id/sell', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/track/:id/sell', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
     const { tokensAmount } = request.body as { tokensAmount: string };
@@ -212,7 +212,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tokens/track/:id/holders — топ-100 держателей
-  fastify.get('/tokens/track/:id/holders', async (request, reply) => {
+  fastify.get('/track/:id/holders', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const token = await db.trackToken.findFirst({
@@ -247,7 +247,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tokens/track/:id/price-history
-  fastify.get('/tokens/track/:id/price-history', async (request, reply) => {
+  fastify.get('/track/:id/price-history', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { period = '7d' } = request.query as { period?: string };
 
@@ -274,7 +274,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tokens/track/:id/transactions
-  fastify.get('/tokens/track/:id/transactions', async (request, reply) => {
+  fastify.get('/track/:id/transactions', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { limit = '20', offset = '0' } = request.query as any;
 
@@ -301,7 +301,7 @@ export async function tokenRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tokens/royalty/claim — вывод Royalty Flow
-  fastify.post('/tokens/royalty/claim', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/royalty/claim', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
 
     const pending = await db.royaltyPayout.findMany({

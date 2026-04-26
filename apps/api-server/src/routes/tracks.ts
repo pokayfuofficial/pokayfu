@@ -25,7 +25,7 @@ const PlaySchema = z.object({
 export async function trackRoutes(fastify: FastifyInstance) {
 
   // GET /tracks/search
-  fastify.get('/tracks/search', async (request, reply) => {
+  fastify.get('/search', async (request, reply) => {
     const { q, genre, limit = '20', offset = '0' } = request.query as any;
 
     if (!q || String(q).trim().length < 2) {
@@ -54,7 +54,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tracks/:id
-  fastify.get('/tracks/:id', async (request, reply) => {
+  fastify.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const track = await cacheGetOrSet(
@@ -78,7 +78,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tracks/:id/stream — требует наличие токенов
-  fastify.get('/tracks/:id/stream', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.get('/:id/stream', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
 
@@ -129,7 +129,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tracks/:id/preview — без авторизации, 45 сек
-  fastify.get('/tracks/:id/preview', async (request, reply) => {
+  fastify.get('/:id/preview', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const track = await db.track.findUnique({
@@ -152,7 +152,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tracks/:id/analytics
-  fastify.get('/tracks/:id/analytics', async (request, reply) => {
+  fastify.get('/:id/analytics', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { period = '7d' } = request.query as { period?: string };
 
@@ -232,7 +232,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tracks/:id/play — запись прослушивания
-  fastify.post('/tracks/:id/play', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/:id/play', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
     const body = PlaySchema.safeParse(request.body);
@@ -273,7 +273,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tracks/:id/like — toggle лайк
-  fastify.post('/tracks/:id/like', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/:id/like', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
 
@@ -293,7 +293,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // GET /tracks/:id/comments
-  fastify.get('/tracks/:id/comments', async (request, reply) => {
+  fastify.get('/:id/comments', async (request, reply) => {
     const { id } = request.params as { id: string };
     const { limit = '20', offset = '0' } = request.query as any;
 
@@ -317,7 +317,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tracks/:id/comment
-  fastify.post('/tracks/:id/comment', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/:id/comment', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const payload = request.user as { userId: string };
     const { text } = request.body as { text: string };
@@ -337,7 +337,7 @@ export async function trackRoutes(fastify: FastifyInstance) {
   });
 
   // POST /tracks/upload — загрузка аудио на S3
-  fastify.post('/tracks/upload', { preHandler: requireArtist }, async (request, reply) => {
+  fastify.post('/upload', { preHandler: requireArtist }, async (request, reply) => {
     // TODO: multipart upload в Cloudflare R2
     // Заглушка для разработки
     return reply.send({

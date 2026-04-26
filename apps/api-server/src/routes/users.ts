@@ -13,7 +13,7 @@ const UpdateProfileSchema = z.object({
 export async function userRoutes(fastify: FastifyInstance) {
 
   // GET /users/:id — публичный профиль
-  fastify.get('/users/:id', async (request, reply) => {
+  fastify.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
 
     const user = await db.user.findUnique({
@@ -37,7 +37,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // PATCH /users/me — обновление своего профиля
-  fastify.patch('/users/me', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.patch('/me', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const body = UpdateProfileSchema.safeParse(request.body);
 
@@ -54,7 +54,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // GET /users/me/library — библиотека токенов
-  fastify.get('/users/me/library', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.get('/me/library', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
 
     const [trackHoldings, artistHoldings] = await Promise.all([
@@ -100,7 +100,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // GET /users/me/portfolio — портфель с P&L
-  fastify.get('/users/me/portfolio', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.get('/me/portfolio', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
 
     const cacheKey = CacheKeys.portfolio(payload.userId);
@@ -175,7 +175,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // GET /users/me/royalty — история Royalty Flow
-  fastify.get('/users/me/royalty', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.get('/me/royalty', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const { status, limit = '20', offset = '0' } = request.query as any;
 
@@ -219,7 +219,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // POST /users/referral/apply — применить реферальный код
-  fastify.post('/users/referral/apply', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.post('/referral/apply', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
     const { code } = request.body as { code: string };
 
@@ -253,7 +253,7 @@ export async function userRoutes(fastify: FastifyInstance) {
   });
 
   // GET /users/me/referrals — статистика рефералов
-  fastify.get('/users/me/referrals', { preHandler: requireAuth }, async (request, reply) => {
+  fastify.get('/me/referrals', { preHandler: requireAuth }, async (request, reply) => {
     const payload = request.user as { userId: string };
 
     const [referrals, user] = await Promise.all([
