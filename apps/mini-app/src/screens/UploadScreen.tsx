@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { tracksApi } from '@/api/client';
+import { tracksApi, artistsApi } from '@/api/client';
+import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import { Genre } from '@pokayfu/shared-types';
+
 
 const GENRES = [
-  { id: Genre.HIP_HOP, label: '🎤 Hip-Hop' }, { id: Genre.ELECTRONIC, label: '⚡ Electronic' },
-  { id: Genre.POP,     label: '🎹 Pop'      }, { id: Genre.RNB,        label: '🎷 R&B'        },
-  { id: Genre.TRAP,    label: '🌊 Trap'     }, { id: Genre.INDIE,      label: '🎸 Indie'      },
-  { id: Genre.ROCK,    label: '🤘 Rock'     }, { id: Genre.HOUSE,      label: '🏠 House'      },
-  { id: Genre.OTHER,   label: '+ Другой'    },
+  { id: 'HIP_HOP', label: '🎤 Hip-Hop' }, { id: 'ELECTRONIC', label: '⚡ Electronic' },
+  { id: 'POP',     label: '🎹 Pop'      }, { id: 'RNB',        label: '🎷 R&B'        },
+  { id: 'TRAP',    label: '🌊 Trap'     }, { id: 'INDIE',      label: '🎸 Indie'      },
+  { id: 'ROCK',    label: '🤘 Rock'     }, { id: 'HOUSE',      label: '🏠 House'      },
+  { id: 'OTHER',   label: '+ Другой'    },
 ];
 
 const STEPS = ['Файл', 'Инфо', 'Жанр', 'Пуск'];
@@ -19,7 +20,7 @@ export function UploadScreen() {
   const { goBack, showToast, navigate } = useUIStore();
   const [step, setStep]     = useState(2); // 0-based, начинаем с шага жанра для демо
   const [title, setTitle]   = useState('Ночной Дрифт');
-  const [genre, setGenre]   = useState<Genre>(Genre.HIP_HOP);
+  const [genre, setGenre]   = useState('HIP_HOP');
   const [year, setYear]     = useState(new Date().getFullYear());
   const [lyrics, setLyrics] = useState('');
 
