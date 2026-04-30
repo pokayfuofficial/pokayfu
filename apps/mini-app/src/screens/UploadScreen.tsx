@@ -18,6 +18,7 @@ const STEPS = ['Файл', 'Инфо', 'Жанр', 'Пуск'];
 
 export function UploadScreen() {
   const { goBack, showToast, navigate } = useUIStore();
+  const { user } = useAuthStore();
   const [step, setStep]     = useState(2); // 0-based, начинаем с шага жанра для демо
   const [title, setTitle]   = useState('Ночной Дрифт');
   const [genre, setGenre]   = useState('HIP_HOP');
@@ -25,14 +26,17 @@ export function UploadScreen() {
   const [lyrics, setLyrics] = useState('');
 
   const createMutation = useMutation({
-    mutationFn: () => tracksApi.create({
+    mutationFn: async () => {
+      if (user?.role !== "ARTIST") { await artistsApi.register({ genres: [genre], txHash: "testnet-free" }); }
+      return tracksApi.create({
       title,
       genre,
       year,
       lyrics: lyrics || undefined,
       audioUrl:    'https://cdn.pokayfu.com/audio/mock.mp3',
       durationSec: 240,
-    }),
+    });
+    },
     onSuccess: (r) => {
       showToast(`🚀 Трек "${title}" публикуется! Токен создаётся на TON.`);
       setTimeout(() => navigate('track', { id: r.data.data.id }), 1500);
